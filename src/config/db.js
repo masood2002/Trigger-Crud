@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-const Url =
-  "mongodb+srv://masood:masood123@cluster0.wbgi0tq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const Url = "mongodb://localhost:27017";
 const dbCon = async () => {
   try {
     await mongoose.connect(Url);

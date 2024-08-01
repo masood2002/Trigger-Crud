@@ -1,5 +1,4 @@
 import { Trigger } from "../../models/index.js";
-
 const getTriggerCount = async (givenDate, name, status, targetType) => {
   const startOfDay = new Date(givenDate.setHours(0, 0, 0, 0));
   const endOfDay = new Date(givenDate.setHours(23, 59, 59, 999));
@@ -73,6 +72,7 @@ const getTimeRange = (timeframe, dateParams, req) => {
       console.log(date);
       startDate = new Date(year, month, date, 0, 0, 0, 0);
       endDate = new Date(year, month, date, 23, 59, 59, 999);
+
       console.log(startDate, endDate);
       break;
     case "weekly":

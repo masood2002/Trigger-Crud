@@ -2,31 +2,33 @@ import mongoose from "mongoose";
 import { Trigger } from "../models/index.js";
 import { faker } from "@faker-js/faker";
 import { factory } from "factory-girl";
+let count;
+const dummyCreation = async (req) => {
+  count = parseInt(req.params.number, 10);
+  if (isNaN(count) || count <= 0) {
+    return res.status(400).json(errorResponse(req.__("invalidNumberFormat")));
+  }
 
-const dummyCreation = async (count, req) => {
   try {
     await Trigger.deleteMany({});
-
+    const result = [];
     for (let i = 0; i < count; i++) {
-      await create();
+      const dummyTrigger = await factory.build("trigger");
+      const actions = conditionActionMap[dummyTrigger.condition];
+      dummyTrigger.action = faker.helpers.arrayElement(actions);
+      await dummyTrigger.save();
+      result.push(dummyTrigger);
     }
 
-    console.log(req.__("dummyTriggersCreatedSuccessfully"));
-
     return {
-      status: true,
-      statusCode: 200,
-      message: req.__("dummyTriggersCreatedSuccessfully"),
+      data: result,
     };
   } catch (error) {
-    return {
-      status: false,
-      statusCode: 500,
-      message: req.__("issueInCreatingDummyTriggers"),
-      error: error,
-    };
+    console.error("Error creating dummy data:", error);
+    throw new Error(req.__("errorCreatingDummyData"));
   }
 };
+
 const conditionActionMap = {
   "when match is finished": ["display match summary", "display match result"],
   "when toss is done": ["toss result"],

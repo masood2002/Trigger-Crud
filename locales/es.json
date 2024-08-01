@@ -40,5 +40,8 @@
 	"authInvalid": "La autenticación no es válida",
 	"nameIsInvalid": " Falta la autenticación",
 	"triggersFetchedSuccessfully": "triggersFetchedSuccessfully",
-	"triggersFilteredSuccessfully": "triggersFilteredSuccessfully"
+	"triggersFilteredSuccessfully": "triggersFilteredSuccessfully",
+	"calendarFiltersAppliedSuccessfully": "calendarFiltersAppliedSuccessfully",
+	"errorCreatingDummyData": "errorCreatingDummyData",
+	"triggerRemovedSuccessfully": "triggerRemovedSuccessfully"
 }

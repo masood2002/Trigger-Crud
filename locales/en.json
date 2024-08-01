@@ -38,5 +38,8 @@
 	"nameIsInvalid": "Enter a valid Name",
 	"invalidNumberFormat": "invalidNumberFormat",
 	"triggersFetchedSuccessfully": "triggersFetchedSuccessfully",
-	"triggersFilteredSuccessfully": "triggersFilteredSuccessfully"
+	"triggersFilteredSuccessfully": "triggersFilteredSuccessfully",
+	"calendarFiltersAppliedSuccessfully": "calendarFiltersAppliedSuccessfully",
+	"errorCreatingDummyData": "errorCreatingDummyData",
+	"triggerRemovedSuccessfully": "triggerRemovedSuccessfully"
 }

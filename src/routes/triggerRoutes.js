@@ -11,7 +11,7 @@ import {
   show,
   advanceCalendarFilters,
   dummy,
-} from "../Controllers/triggers/index.js";
+} from "../controllers/triggers/index.js";
 
 const triggerRouter = express.Router();
 

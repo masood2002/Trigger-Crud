@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Trigger } from "../../models/index.js";
 import { search, getTimeRange, getPaginationMeta } from "./index.js";
-
+import { checkName } from "../../../validations/index.js";
 /**
  * Adds a new trigger to the database and returns a response.
  * @param {Object} data - The data for the new trigger.
@@ -9,9 +9,14 @@ import { search, getTimeRange, getPaginationMeta } from "./index.js";
  * @returns {Promise<Object>} The response object with status, message, and data.
  */
 
-const add = async (data, req) => {
+const add = async (req) => {
+  const isValid = checkName(req);
+  if (!isValid) {
+    return res.status(400).json(errorResponse(validation.message));
+  }
+
   try {
-    const trigger = new Trigger(data);
+    const trigger = new Trigger(req.body);
     await trigger.save();
 
     return {
@@ -29,9 +34,9 @@ const add = async (data, req) => {
  * @returns {Promise<Object>} The response object with status and message.
  */
 
-const eliminate = async (id, req) => {
+const eliminate = async (req) => {
   try {
-    const result = await Trigger.findByIdAndDelete(id);
+    const result = await Trigger.findByIdAndDelete(req.params.id);
 
     if (!result) {
       throw new Error(req.__("triggerNotFound"));
@@ -52,9 +57,11 @@ const eliminate = async (id, req) => {
  * @param {Object} req - The request object containing the locale for response messages.
  * @returns {Promise<Object>} The response object with status, message, and updated data.
  */
-const modify = async (id, data, req) => {
+const modify = async (req) => {
   try {
-    const trigger = await Trigger.findByIdAndUpdate(id, data, { new: true });
+    const trigger = await Trigger.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
 
     if (!trigger) {
       throw new Error(req.__("triggerNotFound"));
@@ -77,7 +84,43 @@ const modify = async (id, data, req) => {
  * @param {Object} req - The request object containing the locale for response messages.
  * @returns {Promise<Object>} The response object with status, message, data, and pagination meta.
  */
-const fetch = async (data, page, limit, sortOrder, req) => {
+// const fetch = async (data, page, limit, sortOrder, req) => {
+//   try {
+//     let triggers;
+
+//     if (data && data.trim() !== "") {
+//       const allTriggers = await Trigger.find().exec();
+//       data = data.toLowerCase();
+//       triggers = await search(data, allTriggers);
+//     } else {
+//       triggers = await Trigger.find()
+//         .sort({ name: sortOrder })
+//         .skip((page - 1) * limit)
+//         .limit(limit)
+//         .exec();
+//     }
+
+//     if (triggers.length === 0) {
+//       return {
+//         message: req.__("noTriggerFound"),
+//         data: [],
+//         meta: getPaginationMeta(0, page, limit),
+//       };
+//     }
+
+//     const totalCount = await Trigger.countDocuments();
+
+//     return {
+//       data: triggers,
+//       meta: getPaginationMeta(totalCount, page, limit),
+//     };
+//   } catch (error) {
+//     throw new Error(req.__("errorRetrievingTriggers"));
+//   }
+// };
+const fetch = async (req) => {
+  const { data, page = 1, limit = 10, sortOrder = "asc" } = req.query;
+
   try {
     let triggers;
 
@@ -125,16 +168,20 @@ const fetch = async (data, page, limit, sortOrder, req) => {
  * @returns {Promise<Object>} The response object with status, message, data, and pagination meta.
  */
 
-const sorting = async (
-  page,
-  sortOrder,
-  limit,
-  givenDate,
-  name,
-  status,
-  targetType,
-  req
-) => {
+const sorting = async (req) => {
+  const { page = 1, per_page = 10, sort = "ASC" } = req.query;
+  const { order_by, name, status, targetType } = req.body;
+
+  const currentPage = parseInt(page, 10);
+  const limit = parseInt(per_page, 10);
+  const sortOrder = sort.toUpperCase() === "ASC" ? 1 : -1;
+
+  const givenDate = new Date(order_by);
+
+  if (isNaN(givenDate.getTime())) {
+    return res.status(400).json(errorResponse(req.__("invalidDateFormat")));
+  }
+
   const startOfDay = new Date(givenDate.setHours(0, 0, 0, 0));
   const endOfDay = new Date(givenDate.setHours(23, 59, 59, 999));
   const skip = (page - 1) * limit;
@@ -163,10 +210,9 @@ const sorting = async (
       };
     }
 
-    const currentPage = page;
-
     return {
       data: triggers,
+
       meta: getPaginationMeta(totalCount, currentPage, limit),
     };
   } catch (error) {
@@ -202,8 +248,51 @@ const retrieve = async (id, req) => {
  * @param {Object} req - The request object containing the locale for response messages.
  * @returns {Promise<Object>} The response object with status, message, and grouped trigger data.
  */
-const calendar = async (timeframe, dateParams, filters, req) => {
-  const { startDate, endDate } = getTimeRange(timeframe, dateParams);
+// const calendar = async (timeframe, dateParams, filters, req) => {
+//   const { startDate, endDate } = getTimeRange(timeframe, dateParams);
+
+//   try {
+//     const query = {
+//       createdAt: { $gte: startDate, $lte: endDate },
+//       ...(filters.name && { name: { $regex: filters.name, $options: "i" } }),
+//       ...(filters.type && { type: { $in: filters.type } }),
+//       ...(filters.status && { status: { $in: filters.status } }),
+//       ...(filters.targetType && { targetType: { $in: filters.targetType } }),
+//       ...(filters.targetId && { targetId: { $in: filters.targetId } }),
+//     };
+
+//     const triggers = await Trigger.find(query).exec();
+
+//     const groupedTriggers = {};
+//     const currentDate = new Date(startDate);
+//     while (currentDate <= endDate) {
+//       const dateKey = currentDate.toISOString().split("T")[0];
+//       groupedTriggers[dateKey] = [];
+//       currentDate.setDate(currentDate.getDate() + 1);
+//     }
+
+//     triggers.forEach((trigger) => {
+//       const dateKey = trigger.createdAt.toISOString().split("T")[0];
+//       if (groupedTriggers[dateKey]) {
+//         groupedTriggers[dateKey].push(trigger);
+//       }
+//     });
+
+//     return {
+//       data: groupedTriggers,
+//     };
+//   } catch (error) {
+//     throw new Error(req.__("errorRetrievingTimeframeTriggers", { timeframe }));
+//   }
+// };
+const calendar = async (req) => {
+  const { timeFrame } = req.params;
+  const { year, month, week, date, quarter } = req.body;
+  const filters = req.body.filters || {};
+
+  const dateParams = { year, month, week, date, quarter };
+
+  const { startDate, endDate } = getTimeRange(timeFrame, dateParams);
 
   try {
     const query = {
@@ -239,5 +328,4 @@ const calendar = async (timeframe, dateParams, filters, req) => {
     throw new Error(req.__("errorRetrievingTimeframeTriggers", { timeframe }));
   }
 };
-
 export { add, eliminate, modify, fetch, sorting, retrieve, calendar };
