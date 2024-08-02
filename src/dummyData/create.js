@@ -4,12 +4,11 @@ import { faker } from "@faker-js/faker";
 import { factory } from "factory-girl";
 let count;
 const dummyCreation = async (req) => {
-  count = parseInt(req.params.number, 10);
-  if (isNaN(count) || count <= 0) {
-    return res.status(400).json(errorResponse(req.__("invalidNumberFormat")));
-  }
-
   try {
+    count = parseInt(req.params.number, 10);
+    if (isNaN(count) || count <= 0)
+      throw new Error(req.__("invalidNumberFormat"));
+
     await Trigger.deleteMany({});
     const result = [];
     for (let i = 0; i < count; i++) {
@@ -24,8 +23,7 @@ const dummyCreation = async (req) => {
       data: result,
     };
   } catch (error) {
-    console.error("Error creating dummy data:", error);
-    throw new Error(req.__("errorCreatingDummyData"));
+    throw new Error(error.message);
   }
 };
 

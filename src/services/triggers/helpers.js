@@ -14,29 +14,16 @@ const getTriggerCount = async (givenDate, name, status, targetType) => {
   return await Trigger.countDocuments(query);
 };
 
-const search = async (data, allTriggers) => {
-  const filteredTriggers = allTriggers.filter((trigger) => {
-    return (
-      trigger.name.toLowerCase().includes(data) ||
-      trigger.type.toLowerCase().includes(data) ||
-      trigger.action.toLowerCase().includes(data) ||
-      trigger.condition.toLowerCase().includes(data) ||
-      (trigger.network &&
-        trigger.network.some((network) =>
-          network.toLowerCase().includes(data)
-        )) ||
-      (trigger.channels &&
-        trigger.channels.some((channel) =>
-          channel.toLowerCase().includes(data)
-        )) ||
-      trigger.post.toLowerCase().includes(data) ||
-      trigger.status.toLowerCase().includes(data) ||
-      trigger.targetType.toLowerCase().includes(data) ||
-      trigger.targetId.toLowerCase().includes(data)
-    );
+const search = async (searchString, allTriggers) => {
+  const lowerCaseSearchString = searchString.toLowerCase();
+  return allTriggers.filter((trigger) => {
+    return Object.values(trigger.toObject()).some((value) => {
+      if (typeof value === "string") {
+        return value.toLowerCase().includes(lowerCaseSearchString);
+      }
+      return false;
+    });
   });
-
-  return filteredTriggers;
 };
 
 const getPaginationMeta = (totalCount, currentPage, limit) => {
@@ -69,11 +56,9 @@ const getTimeRange = (timeframe, dateParams, req) => {
 
   switch (timeframe) {
     case "daily":
-      console.log(date);
       startDate = new Date(year, month, date, 0, 0, 0, 0);
       endDate = new Date(year, month, date, 23, 59, 59, 999);
 
-      console.log(startDate, endDate);
       break;
     case "weekly":
       if (week) {

@@ -5,7 +5,7 @@ import {
   fetch,
   sorting,
   retrieve,
-  calendar,
+  getByDateRange,
 } from "../../services/triggers/index.js";
 import { dummyCreation } from "../../dummyData/index.js";
 import { successResponse, errorResponse } from "../../resources/index.js";
@@ -17,6 +17,7 @@ import { successResponse, errorResponse } from "../../resources/index.js";
 const create = async (req, res) => {
   try {
     const result = await add(req);
+
     return res
       .status(200)
       .json(successResponse(req.__("triggerCreatedSuccessfully"), result.data));
@@ -85,7 +86,13 @@ const get = async (req, res) => {
     const result = await fetch(req);
     return res
       .status(200)
-      .json(successResponse(req.__("triggersFetchedSuccessfully"), result));
+      .json(
+        successResponse(
+          req.__("triggersFetchedSuccessfully"),
+          result.data,
+          result.meta
+        )
+      );
   } catch (error) {
     return res.status(422).json(errorResponse(error.message));
   }
@@ -101,7 +108,13 @@ const filter = async (req, res) => {
     const result = await sorting(req);
     return res
       .status(200)
-      .json(successResponse(req.__("triggersFilteredSuccessfully"), result));
+      .json(
+        successResponse(
+          req.__("triggersFilteredSuccessfully"),
+          result.data,
+          result.meta
+        )
+      );
   } catch (error) {
     return res.status(422).json(errorResponse(error.message));
   }
@@ -113,10 +126,8 @@ const filter = async (req, res) => {
  * @param {Object} res - The response object.
  */
 const show = async (req, res) => {
-  const id = req.params.id;
-
   try {
-    const result = await retrieve(id, req);
+    const result = await retrieve(req);
     return res
       .status(200)
       .json(successResponse(req.__("triggerFetchedSuccessfully"), result.data));
@@ -132,7 +143,7 @@ const show = async (req, res) => {
  */
 const advanceCalendarFilters = async (req, res) => {
   try {
-    const result = await calendar(req);
+    const result = await getByDateRange(req);
     return res
       .status(200)
       .json(

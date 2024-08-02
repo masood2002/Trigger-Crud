@@ -1,12 +1,9 @@
-const checkName = (req) => {
-  const name = req.body.name;
-  if (name !== null && typeof name !== "string") {
-    return {
-      status: false,
-      message: req.__("nameMustBeString"),
-    };
-  }
-  return { status: true };
+const validTrigger = (req) => {
+  const errors = {};
+  if (!req.body.name || typeof req.body.name !== "string")
+    errors.name = req.__("nameMustBeString");
+
+  return errors;
 };
 
-export { checkName };
+export { validTrigger };

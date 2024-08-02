@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Trigger } from "../../models/index.js";
 import { search, getTimeRange, getPaginationMeta } from "./index.js";
-import { checkName } from "../../../validations/index.js";
+import { validTrigger } from "../../../validations/index.js";
 /**
  * Adds a new trigger to the database and returns a response.
  * @param {Object} data - The data for the new trigger.
@@ -10,12 +10,12 @@ import { checkName } from "../../../validations/index.js";
  */
 
 const add = async (req) => {
-  const isValid = checkName(req);
-  if (!isValid) {
-    return res.status(400).json(errorResponse(validation.message));
-  }
-
   try {
+    const isValid = validTrigger(req);
+    if (Object.keys(isValid).length > 0) {
+      throw new Error(Object.values(isValid)[0]);
+    }
+
     const trigger = new Trigger(req.body);
     await trigger.save();
 
@@ -23,7 +23,7 @@ const add = async (req) => {
       data: trigger,
     };
   } catch (error) {
-    throw new Error(req.__("errorAddingTrigger"));
+    throw new Error(error.message);
   }
 };
 
@@ -35,18 +35,16 @@ const add = async (req) => {
  */
 
 const eliminate = async (req) => {
+  const result = await Trigger.findByIdAndDelete(req.params.id);
   try {
-    const result = await Trigger.findByIdAndDelete(req.params.id);
-
     if (!result) {
       throw new Error(req.__("triggerNotFound"));
     }
-
     return {
       data: result,
     };
   } catch (error) {
-    throw new Error(req.__("errorRemovingTrigger"));
+    throw new Error(error.message);
   }
 };
 
@@ -71,7 +69,7 @@ const modify = async (req) => {
       data: trigger,
     };
   } catch (error) {
-    throw new Error(req.__("errorUpdatingTrigger"));
+    throw new Error(error.message);
   }
 };
 
@@ -84,74 +82,34 @@ const modify = async (req) => {
  * @param {Object} req - The request object containing the locale for response messages.
  * @returns {Promise<Object>} The response object with status, message, data, and pagination meta.
  */
-// const fetch = async (data, page, limit, sortOrder, req) => {
-//   try {
-//     let triggers;
-
-//     if (data && data.trim() !== "") {
-//       const allTriggers = await Trigger.find().exec();
-//       data = data.toLowerCase();
-//       triggers = await search(data, allTriggers);
-//     } else {
-//       triggers = await Trigger.find()
-//         .sort({ name: sortOrder })
-//         .skip((page - 1) * limit)
-//         .limit(limit)
-//         .exec();
-//     }
-
-//     if (triggers.length === 0) {
-//       return {
-//         message: req.__("noTriggerFound"),
-//         data: [],
-//         meta: getPaginationMeta(0, page, limit),
-//       };
-//     }
-
-//     const totalCount = await Trigger.countDocuments();
-
-//     return {
-//       data: triggers,
-//       meta: getPaginationMeta(totalCount, page, limit),
-//     };
-//   } catch (error) {
-//     throw new Error(req.__("errorRetrievingTriggers"));
-//   }
-// };
 const fetch = async (req) => {
-  const { data, page = 1, limit = 10, sortOrder = "asc" } = req.query;
+  const { page = 1, limit = 10, sortOrder = "asc" } = req.query;
+  let data = req.body.data || "";
 
   try {
     let triggers;
 
-    if (data && data.trim() !== "") {
+    if (data.trim() !== "") {
       const allTriggers = await Trigger.find().exec();
-      data = data.toLowerCase();
       triggers = await search(data, allTriggers);
     } else {
       triggers = await Trigger.find()
-        .sort({ name: sortOrder })
+        .sort({ name: sortOrder.toLowerCase() === "asc" ? 1 : -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .exec();
     }
 
-    if (triggers.length === 0) {
-      return {
-        message: req.__("noTriggerFound"),
-        data: [],
-        meta: getPaginationMeta(0, page, limit),
-      };
-    }
-
-    const totalCount = await Trigger.countDocuments();
+    const totalCount = await Trigger.countDocuments(
+      data.trim() !== "" ? {} : {}
+    );
 
     return {
       data: triggers,
       meta: getPaginationMeta(totalCount, page, limit),
     };
   } catch (error) {
-    throw new Error(req.__("errorRetrievingTriggers"));
+    throw new Error(error.message);
   }
 };
 
@@ -179,7 +137,7 @@ const sorting = async (req) => {
   const givenDate = new Date(order_by);
 
   if (isNaN(givenDate.getTime())) {
-    return res.status(400).json(errorResponse(req.__("invalidDateFormat")));
+    throw new Error(req.__("invalidDateFormat"));
   }
 
   const startOfDay = new Date(givenDate.setHours(0, 0, 0, 0));
@@ -203,20 +161,15 @@ const sorting = async (req) => {
       .exec();
 
     if (triggers.length === 0) {
-      return {
-        message: req.__("noTriggerFound"),
-        data: [],
-        meta: getPaginationMeta(0, page, limit),
-      };
+      throw new Error(req.__("noTriggerFound"));
     }
 
     return {
       data: triggers,
-
       meta: getPaginationMeta(totalCount, currentPage, limit),
     };
   } catch (error) {
-    throw new Error(req.__("errorRetrievingTriggers"));
+    throw new Error(error.message);
   }
 };
 
@@ -226,9 +179,9 @@ const sorting = async (req) => {
  * @param {Object} req - The request object containing the locale for response messages.
  * @returns {Promise<Object>} The response object with status, message, and the trigger data.
  */
-const retrieve = async (id, req) => {
+const retrieve = async (req) => {
   try {
-    const trigger = await Trigger.findById(id).exec();
+    const trigger = await Trigger.findById(req.params.id).exec();
     if (!trigger) {
       throw new Error(req.__("triggerNotFound"));
     }
@@ -236,7 +189,7 @@ const retrieve = async (id, req) => {
       data: trigger,
     };
   } catch (error) {
-    throw new Error(req.__("errorRetrievingTrigger"));
+    throw new Error(error.message);
   }
 };
 
@@ -285,7 +238,7 @@ const retrieve = async (id, req) => {
 //     throw new Error(req.__("errorRetrievingTimeframeTriggers", { timeframe }));
 //   }
 // };
-const calendar = async (req) => {
+const getByDateRange = async (req) => {
   const { timeFrame } = req.params;
   const { year, month, week, date, quarter } = req.body;
   const filters = req.body.filters || {};
@@ -325,7 +278,7 @@ const calendar = async (req) => {
       data: groupedTriggers,
     };
   } catch (error) {
-    throw new Error(req.__("errorRetrievingTimeframeTriggers", { timeframe }));
+    throw new Error(error.message);
   }
 };
-export { add, eliminate, modify, fetch, sorting, retrieve, calendar };
+export { add, eliminate, modify, fetch, sorting, retrieve, getByDateRange };

@@ -43,5 +43,8 @@
 	"triggersFilteredSuccessfully": "triggersFilteredSuccessfully",
 	"calendarFiltersAppliedSuccessfully": "calendarFiltersAppliedSuccessfully",
 	"errorCreatingDummyData": "errorCreatingDummyData",
-	"triggerRemovedSuccessfully": "triggerRemovedSuccessfully"
+	"triggerRemovedSuccessfully": "triggerRemovedSuccessfully",
+	"errorRemovingTrigger": "errorRemovingTrigger",
+	"errorUpdatingTrigger": "errorUpdatingTrigger",
+	"triggerFetchedSuccessfully": "triggerFetchedSuccessfully"
 }
