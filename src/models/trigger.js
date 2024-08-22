@@ -7,9 +7,12 @@ const triggerSchema = new Schema(
       type: String,
       required: true,
     },
-    type: {
+    createdBy: {
       type: String,
-      enum: ["match", "player", "official"],
+      required: true,
+    },
+    updatedBy: {
+      type: String,
       required: true,
     },
     action: {
@@ -21,7 +24,7 @@ const triggerSchema = new Schema(
       required: true,
     },
 
-    network: {
+    networks: {
       type: [String],
       required: true,
     },
@@ -29,22 +32,25 @@ const triggerSchema = new Schema(
       type: [String],
       required: true,
     },
-    post: {
-      type: String,
-      required: true,
-    },
-    reminderTime: {
-      type: Date,
-      required: true,
-    },
     status: {
       type: String,
-      enum: ["send", "not-sent"],
-      default: "not-sent",
+      enum: ["sent", "not-send"],
+      default: "not-send",
     },
+    content: {
+      type: String,
+      required: false,
+    },
+    image: {
+      url: {
+        type: String,
+        required: true,
+      },
+    },
+
     targetType: {
       type: String,
-      enum: ["account", "league", "match"],
+      enum: ["match", "account", "league"],
       required: true,
     },
     targetId: {
@@ -60,6 +66,24 @@ const triggerSchema = new Schema(
     timestamps: true,
   }
 );
+triggerSchema.pre("save", function (next) {
+  if (this.isNew) {
+    // Logic to run before creating a document
+    console.log("Pre-create hook triggered");
+  } else {
+    // Logic to run before updating a document
+    console.log("Pre-update hook triggered");
+  }
+
+  // Custom logic here
+  next();
+});
+triggerSchema.pre("findOneAndUpdate", function (next) {
+  console.log("Pre-update hook triggered");
+  // Custom logic here
+  next();
+});
+
 const Trigger = mongoose.model("Trigger", triggerSchema);
 
 export default Trigger;

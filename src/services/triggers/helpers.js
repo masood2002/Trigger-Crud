@@ -1,3 +1,5 @@
+import axios from "axios";
+import { igPosting, fbPosting } from "../../../channels/index.js";
 import { Trigger } from "../../models/index.js";
 const getTriggerCount = async (givenDate, name, status, targetType) => {
   const startOfDay = new Date(givenDate.setHours(0, 0, 0, 0));
@@ -114,10 +116,87 @@ const getWeekRange = (date) => {
   return { startOfWeek, endOfWeek };
 };
 
+const getContentFromApi = async (req) => {
+  const { matchData } = req.body;
+  if (req.query.category) {
+    const { achievement, category } = req.query;
+  }
+  try {
+    // Determine the request body using ternary operators
+    const requestBody =
+      matchData.status.id === 3
+        ? {
+            matchobj: matchData,
+            category: category,
+            achievement: achievement,
+          }
+        : matchData.status.id === 1 ||
+          matchData.status.id === 2 ||
+          matchData.status.id === 4
+        ? {
+            matchobj: matchData,
+          }
+        : (() => {
+            throw new Error("Unsupported status id");
+          })(); // Default case for unsupported status.id
+
+    // Make the Axios request
+    const response = await axios.post(process.env.apiUrl, requestBody, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.token}`,
+      },
+    });
+
+    // Handle the response
+    return {
+      data: response.data,
+    };
+  } catch (error) {
+    // Handle any errors
+    console.error("Error:", error);
+    throw error; // Rethrow the error after logging it
+  }
+};
+
+const postTrigger = async (trigger, content, image) => {
+  await Promise.all(
+    trigger.channels.map(async (channel) => {
+      switch (channel) {
+        case "facebook":
+          console.log(`Posting on Facebook for trigger ID ${trigger._id}.`);
+          await fbPosting(content, image);
+          break;
+        case "instagram":
+          console.log(`Posting on Instagram for trigger ID ${trigger._id}.`);
+          await igPosting(content, image);
+          break;
+        case "twitter":
+          console.log(`Posting on Twitter for trigger ID ${trigger._id}.`);
+          await postToTwitter(trigger);
+          break;
+        default:
+          console.log(
+            `trigger with ID ${trigger._id} has an unknown channel: ${channel}.`
+          );
+      }
+    })
+  );
+  return;
+};
+
+const emailNotification = async (email) => {
+  console.log("Email sent to creator");
+  return;
+};
+
 export {
   search,
   getWeekRange,
   getTriggerCount,
   getTimeRange,
   getPaginationMeta,
+  getContentFromApi,
+  postTrigger,
+  emailNotification,
 };

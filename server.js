@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
-import dbCon from "./src/config/db.js";
+import { dbCon } from "./src/config/index.js";
 import dotenv from "dotenv";
 import i18n from "./i18.js";
 import { mainRouter } from "./src/routes/index.js";
+
 dotenv.config();
 dbCon();
 

@@ -1,1 +1,1 @@
-export { default as checkAuth } from "./authenticate.js";
+export * from "./authenticate.js";

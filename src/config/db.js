@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 const Url = "mongodb://localhost:27017";
-const dbCon = async () => {
+export const dbCon = async () => {
   try {
     await mongoose.connect(Url);
     console.log("connected to database");
@@ -9,5 +9,3 @@ const dbCon = async () => {
     console.log("connection fail");
   }
 };
-
-export default dbCon;

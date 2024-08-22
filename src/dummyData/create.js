@@ -2,18 +2,55 @@ import mongoose from "mongoose";
 import { Trigger } from "../models/index.js";
 import { faker } from "@faker-js/faker";
 import { factory } from "factory-girl";
-let count;
+
+// Define the conditionActionMap
+const conditionActionMap = {
+  match_finished: ["display_summary", "display_result"],
+  toss_done: ["toss_result"],
+  match_scheduled: ["match_scheduled"],
+  match_progress: [
+    "player_Fifty",
+    "player_Century",
+    "player_Took_Wicket",
+    "Player_Hat-trick",
+    "player_Took_catch",
+  ],
+};
+
+// Define the factory for the Trigger model
+factory.define("trigger", Trigger, {
+  name: () => faker.lorem.words(2),
+  condition: () => faker.helpers.arrayElement(Object.keys(conditionActionMap)),
+  network: () => ["social media"], // Set network to "social media"
+  channels: () => ["instagram", "facebook"], // Set channels to "instagram" and "facebook"
+  content: () => faker.lorem.sentence(),
+  image: () => ({
+    url: faker.image.url(), // Updated to use faker.image.url
+  }),
+  post: () => faker.string.uuid(),
+  createdBy: () => faker.string.uuid(),
+  updatedBy: () => faker.string.uuid(),
+  reminderTime: () => faker.date.future(),
+  status: () => faker.helpers.arrayElement(["sent", "not-send"]),
+  targetType: () => faker.helpers.arrayElement(["match", "account", "league"]),
+  targetId: () => faker.string.uuid(),
+  humanApproval: () => faker.datatype.boolean(),
+});
+
+// Function to create dummy triggers
 const dummyCreation = async (req) => {
   try {
-    count = parseInt(req.params.number, 10);
+    const count = parseInt(req.params.number, 10);
     if (isNaN(count) || count <= 0)
       throw new Error(req.__("invalidNumberFormat"));
 
     await Trigger.deleteMany({});
     const result = [];
     for (let i = 0; i < count; i++) {
+      // Build the trigger using the factory
       const dummyTrigger = await factory.build("trigger");
       const actions = conditionActionMap[dummyTrigger.condition];
+      // Set the action based on the condition
       dummyTrigger.action = faker.helpers.arrayElement(actions);
       await dummyTrigger.save();
       result.push(dummyTrigger);
@@ -25,45 +62,6 @@ const dummyCreation = async (req) => {
   } catch (error) {
     throw new Error(error.message);
   }
-};
-
-const conditionActionMap = {
-  "when match is finished": ["display match summary", "display match result"],
-  "when toss is done": ["toss result"],
-  "when match is scheduled": ["match scheduled"],
-  "when match is in progress": [
-    "Player Fifty",
-    "Player Century",
-    "Player Took Wicket",
-    "Player Hat-trick",
-    "Player Took a catch",
-  ],
-};
-
-factory.define("trigger", Trigger, {
-  name: () => faker.lorem.words(2),
-  type: () => faker.helpers.arrayElement(["match", "player", "official"]),
-  condition: function () {
-    const conditions = Object.keys(conditionActionMap);
-    return faker.helpers.arrayElement(conditions);
-  },
-  network: () => faker.helpers.arrayElements(["email", "sms", "push"], 2),
-  channels: () =>
-    faker.helpers.arrayElements(["facebook", "twitter", "instagram"], 2),
-  post: () => faker.string.uuid(),
-  reminderTime: () => faker.date.future(),
-  status: () => faker.helpers.arrayElement(["send", "not-sent"]),
-  targetType: () => faker.helpers.arrayElement(["account", "league", "match"]),
-  targetId: () => faker.string.uuid(),
-  humanApproval: () => faker.datatype.boolean(),
-});
-
-const create = async () => {
-  const trigger = await factory.build("trigger");
-  const actions = conditionActionMap[trigger.condition];
-  trigger.action = faker.helpers.arrayElement(actions);
-  await trigger.save();
-  return trigger;
 };
 
 export { dummyCreation };
